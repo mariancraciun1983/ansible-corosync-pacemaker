@@ -6,10 +6,10 @@
     <img src="https://travis-ci.com/mariancraciun1983/ansible-corosync-pacemaker.svg?branch=master" alt="Build Status" />
   </a>
   <a href="https://galaxy.ansible.com/mariancraciun1983/corosync_pacemaker">
-    <img src="https://img.shields.io/ansible/role/51687" alt="Ansible Galaxy" />
+    <img src="https://img.shields.io/ansible/role/51695" alt="Ansible Galaxy" />
   </a>
   <a href="https://galaxy.ansible.com/mariancraciun1983/corosync_pacemaker">
-    <img src="https://img.shields.io/ansible/quality/51687" alt="Ansible Quality Score" />
+    <img src="https://img.shields.io/ansible/quality/51695" alt="Ansible Quality Score" />
   </a>
   <a href="https://opensource.org/licenses/MIT">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" />
