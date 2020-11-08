@@ -1,0 +1,19 @@
+- name: auth | check existing authkey
+  stat:
+    path: /etc/corosync/authkey
+  register: authkey_stat
+
+- name: auth | collect any existing authkey
+  block:
+    - name: slurp /etc/corosync/authkey
+      slurp:
+        src: /etc/corosync/authkey
+      register: authkey_slurp
+
+    - name: save /etc/corosync/authkey into dummy host
+      add_host:
+        name: _authkey_dummy
+        authkey_content:  "{{ authkey_slurp['content'] | b64decode }}"
+      no_log: yes
+      changed_when: no
+  when: authkey_stat.stat.exists|bool

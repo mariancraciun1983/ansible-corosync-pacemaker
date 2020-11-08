@@ -1,0 +1,11 @@
+internal_ip:
+corosync_exchange_hosts: false
+corosync_use_internal_ip: false
+corosync_hacluster_password:
+corosync_web_ui: true
+corosync_cluster_settings:
+  - key: stonith-enabled
+    value: "false"
+  - key: no-quorum-policy
+    value: ignore
+corosync_cluster_defaults: []

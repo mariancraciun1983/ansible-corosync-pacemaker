@@ -1,0 +1,14 @@
+- name: restart corosync
+  service:
+    name: corosync
+    state: restarted
+
+- name: restart pacemaker
+  service:
+    name: pacemaker
+    state: restarted
+
+- name: restart pcsd
+  service:
+    name: pcsd
+    state: restarted

@@ -1,0 +1,222 @@
+#!/bin/sh
+#
+# command_raw: runs commands
+#
+# Author:	Marian Craciun
+#
+# License:	MIT
+#
+# Copyright:	(C) 2020 Marian Craciun
+#
+#   OCF parameters are as below:
+#		OCF_RESKEY_start_cmd
+#		OCF_RESKEY_stop_cmd
+#		OCF_RESKEY_monitor_cmd
+#
+# testing with ocf-tester
+# ocf-tester -n command_raw_test \
+#    -o start_cmd="/usr/sbin/iptables -A INPUT -m mark --mark 5434 -j REJECT"  \
+#    -o stop_cmd="/usr/sbin/iptables -D INPUT -m mark --mark 5434 -j REJECT"  \
+#    -o monitor_cmd="/usr/sbin/iptables -C INPUT -m mark --mark 5434 -j REJECT" \
+#    -n command_raw 
+#
+#######################################################################
+# Initialization:
+
+: ${OCF_FUNCTIONS_DIR=${OCF_ROOT}/lib/heartbeat}
+. ${OCF_FUNCTIONS_DIR}/ocf-shellfuncs
+
+# Parameter defaults
+
+OCF_RESKEY_start_cmd_default=""
+OCF_RESKEY_stop_cmd_default=""
+OCF_RESKEY_monitor_cmd_default=""
+
+: ${OCF_RESKEY_start_cmd=${OCF_RESKEY_start_cmd_default}}
+: ${OCF_RESKEY_stop_cmd=${OCF_RESKEY_stop_cmd_default}}
+: ${OCF_RESKEY_monitor_cmd=${OCF_RESKEY_monitor_cmd_default}}
+
+#######################################################################
+CMD=`basename $0`
+
+meta_data() {
+    cat <<END
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
+<resource-agent name="command_raw">
+   <version>1.0</version>
+   <longdesc lang="en">Resource script for adding raw commands</longdesc>
+   <shortdesc lang="en">Raw commands to start/stop and monitor</shortdesc>
+   <parameters>
+      <parameter name="start_cmd" required="0">
+         <longdesc lang="en">The start command</longdesc>
+         <shortdesc lang="en">Rule start command</shortdesc>
+         <content type="string" default="" />
+      </parameter>
+      <parameter name="stop_cmd" required="0">
+         <longdesc lang="en">The stop command</longdesc>
+         <shortdesc lang="en">Rule stop command</shortdesc>
+         <content type="string" default="" />
+      </parameter>
+      <parameter name="monitor_cmd" required="0">
+         <longdesc lang="en">The monitor comman</longdesc>
+         <shortdesc lang="en">Role monitor command</shortdesc>
+         <content type="string" default="" />
+      </parameter>
+   </parameters>
+   <actions>
+      <action name="start" timeout="20s" />
+      <action name="stop" timeout="20s" />
+      <action name="monitor" depth="0" timeout="20s" interval="10" />
+      <action name="meta-data" timeout="5" />
+      <action name="validate-all" timeout="5" />
+   </actions>
+</resource-agent>
+END
+}
+
+#######################################################################
+
+command_status() {
+    ocf_log debug "Running ${OCF_RESKEY_monitor_cmd}"
+    eval "${OCF_RESKEY_monitor_cmd} > /dev/null 2>&1"
+    rc=$?
+    if [ $rc -eq 0 ];
+    then
+        return $OCF_RUNNING
+    else
+        return $OCF_NOT_RUNNING
+    fi
+}
+
+cmd_usage() {
+    cat <<END
+usage: $CMD {start|stop|monitor|validate-all|meta-data}
+
+$CMD is used to manage the iptables rule.
+Usage example:
+crm configure <<EOF
+	primitive IptablesManage ocf:heartbeat:command_raw \\
+        params  \\
+        start_cmd="/usr/sbin/iptables -w --wait-interval 10 -A INPUT -m mark --mark 5434 -j REJECT" \\
+        stop_cmd="/usr/sbin/iptables -w --wait-interval 10 -D INPUT -m mark --mark 5434 -j REJECT" \\
+        monitor_cmd="/usr/sbin/iptables -w --wait-interval 10 -C INPUT -m mark --mark 5434 -j REJECT"
+EOF
+END
+}
+
+cmd_start() {
+    ocf_log debug "Starting resource"
+    if command_status
+    then
+        ocf_log debug "Resource already started"
+        return $OCF_SUCCESS
+    else
+        ocf_log debug "Running ${OCF_RESKEY_start_cmd}"
+        eval ${OCF_RESKEY_start_cmd}
+        if command_status
+        then
+            ocf_log debug "Resource started"
+            return $OCF_SUCCESS
+        else
+            ocf_log err "Failed to start"
+            return $OCF_ERR_GENERIC
+        fi
+    fi
+}
+
+cmd_stop() {
+    ocf_log debug "Stopping"
+    if command_status
+    then
+        ocf_log debug "Running ${OCF_RESKEY_stop_cmd}"
+        eval ${OCF_RESKEY_stop_cmd}
+        if ! command_status
+        then
+            ocf_log debug "Resource stopped"
+            return ${OCF_SUCCESS}
+        fi
+        ocf_log warn "Failed stopping resource"
+        return $OCF_ERR_GENERIC
+    else
+        ocf_log debug "Resource already stopped"
+        return ${OCF_SUCCESS}
+    fi
+}
+
+cmd_monitor() {
+    ocf_log debug "Monitoring resource"
+    command_status
+    ret=$?
+    if [ $ret -eq $OCF_SUCCESS ]
+    then
+        echo "Resource already running"
+        ocf_log debug "Resource already running"
+    else
+        echo "Resource not running"
+        ocf_log debug "Resource not running"
+    fi
+    return $ret
+}
+
+cmd_validate() {
+    return $OCF_SUCCESS
+}
+
+
+if
+  ( [ $# -ne 1 ] )
+then
+  cmd_usage
+  exit $OCF_ERR_ARGS
+fi
+
+case $1 in
+  meta-data)		meta_data
+			exit $OCF_SUCCESS
+			;;
+
+  cmd_usage)		cmd_usage
+			exit $OCF_SUCCESS
+			;;
+  *)			;;
+esac
+
+if [ -z "$OCF_RESKEY_start_cmd" ]; then
+  ocf_log err "Please set OCF_RESKEY_start_cmd"
+  exit $OCF_ERR_CONFIGURED
+fi 
+
+if [ -z "$OCF_RESKEY_stop_cmd" ]; then
+  ocf_log err "Please set OCF_RESKEY_stop_cmd"
+  exit $OCF_ERR_CONFIGURED
+fi 
+
+if [ -z "$OCF_RESKEY_monitor_cmd" ]; then
+  ocf_log err "Please set OCF_RESKEY_monitor_cmd"
+  exit $OCF_ERR_CONFIGURED
+fi 
+
+
+start_cmd=$OCF_RESKEY_start_cmd
+stop_cmd=$OCF_RESKEY_stop_cmd
+monitor_cmd=$OCF_RESKEY_monitor_cmd
+
+case $__OCF_ACTION in
+meta-data)      meta_data
+                exit $OCF_SUCCESS
+                ;;
+start)          cmd_start;;
+stop)           cmd_stop;;
+monitor)        cmd_monitor;;
+validate-all)   cmd_validate;;
+usage|help)     cmd_usage
+                exit $OCF_SUCCESS
+                ;;
+*)              cmd_usage
+                exit $OCF_ERR_UNIMPLEMENTED
+                ;;
+esac
+rc=$?
+ocf_log debug "${OCF_RESOURCE_INSTANCE} $__OCF_ACTION : $rc"
+exit $rc

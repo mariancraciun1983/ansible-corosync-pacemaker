@@ -1,0 +1,86 @@
+---
+
+- name: config | verify requirements
+  assert:
+    that:
+      - corosync_hacluster_password|length > 3
+    quiet: yes
+    fail_msg: corosync_hacluster_password must be defined
+
+- name: config | create hacluster user
+  user:
+    name: hacluster
+    password: "{{ corosync_hacluster_password | mandatory | password_hash('sha512', ansible_hostname|replace('-','x') | truncate(16, True, '', 0))  }}"
+    shell: /sbin/nologin
+    create_home: no
+    comment: "HA cluster admin"
+
+- name: config | update corosync.conf
+  template:
+    src: corosync.conf.j2
+    dest: /etc/corosync/corosync.conf
+    mode: 0644
+  notify:
+    - restart corosync
+    - restart pacemaker
+
+- name: config | enable services
+  service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  with_items:
+    - corosync
+    - pacemaker
+    - pcsd
+
+- name: config | authenticate cluster
+  block:
+
+  - name: config | check if auth was made already
+    stat:
+      path: /var/lib/pcsd/{{ item }}
+    with_items:
+      - known-hosts
+      - tokens
+    register: stat_auth_files
+
+  - name: config | authenticate all nodes
+    command: "{{ item }}"
+    with_items:
+      - pcs cluster auth -u hacluster -p {{ corosync_hacluster_password | quote }}
+      - pcs cluster enable --all
+      - pcs cluster start --all
+    when: >-
+      not stat_auth_files.results.0.stat.exists
+      and not stat_auth_files.results.1.stat.exists
+
+  throttle: 1
+
+- name: config | properties from first host
+  block:
+
+    - name: config | get properties
+      command: pcs property show
+      register: pcs_props_out
+      changed_when: false
+
+    - name: config | set cluster properties
+      command: pcs property set {{ item.key }}={{ item.value }}
+      with_items: '{{ corosync_cluster_settings }}'
+      when: "(item.key|string + ':' + ' ' + item.value|string) not in pcs_props_out.stdout"
+
+    - name: config | set cluster defaults
+      command: pcs resource defaults {{ item.key }}={{ item.value }}
+      with_items: '{{ corosync_cluster_defaults }}'
+      when: "(item.key|string + ':' + ' ' + item.value|string) not in pcs_props_out.stdout"
+
+  when: inventory_hostname == play_hosts[0]
+
+- name: config | set PCSD web GUI config
+  lineinfile:
+    dest: /etc/default/pcsd
+    regexp: 'PCSD_DISABLE_GUI=.*'
+    line: "PCSD_DISABLE_GUI={{ corosync_web_ui|bool|ternary('false','true') }}"
+  notify:
+    - restart pcsd

@@ -1,0 +1,7 @@
+inventory
+*.retry
+*.log
+vars.yml
+._*
+*.py[co]
+.python-version

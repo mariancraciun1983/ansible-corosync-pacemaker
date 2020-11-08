@@ -1,0 +1,12 @@
+---
+- name: auth | collect key
+  import_tasks: collect.yml
+
+- name: auth | generate key
+  import_tasks: generate.yml
+  when: >-
+    inventory_hostname == play_hosts[0] and
+    hostvars['_authkey_dummy'] is not defined
+
+- name: auth | exchange
+  import_tasks: exchange.yml

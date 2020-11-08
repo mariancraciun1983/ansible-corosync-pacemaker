@@ -1,0 +1,19 @@
+---
+
+- name: packages | dependencies
+  apt:
+    name:
+      - gnupg2
+      - apt-transport-https
+      - ca-certificates
+      - software-properties-common
+      - corosync
+      - pacemaker
+      - cluster-glue
+      - fence-agents
+      - resource-agents
+      - pcs
+      - crmsh
+      - libxml2-utils
+    update_cache: true
+    state: present

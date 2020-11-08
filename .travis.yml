@@ -1,0 +1,32 @@
+---
+language: python
+services: docker
+
+python:
+  - "3.8"
+
+cache:
+  - pip:
+  - directories:
+    - /home/travis/.cache/pipenv
+
+branches:
+  only:
+    - master
+    - develop
+
+before_install:
+  - python --version
+
+
+install:
+  - pip3 install pipenv
+  - pipenv install
+
+script:
+  - pipenv run python -V
+  - pipenv run molecule --version
+  - pipenv run molecule test
+
+notifications:
+  webhooks: https://galaxy.ansible.com/api/v1/notifications/

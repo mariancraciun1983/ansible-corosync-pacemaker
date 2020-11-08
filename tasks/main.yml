@@ -1,0 +1,26 @@
+---
+- name: packages
+  import_tasks: packages.yml
+  tags:
+    - packages
+
+- name: heartbeats
+  import_tasks: heartbeats.yml
+  tags:
+    - heartbeats
+
+- name: auth
+  import_tasks: auth/main.yml
+  tags:
+    - auth
+
+- name: hosts
+  import_tasks: hosts.yml
+  when: corosync_exchange_hosts|bool
+  tags:
+    - hosts
+
+- name: config
+  import_tasks: config.yml
+  tags:
+    - config

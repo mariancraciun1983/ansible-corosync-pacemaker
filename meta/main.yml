@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: corosync_pacemaker
+  author: Marian Craciun
+  description: Install corosync and configure a cluster with pacemaker
+  license: MIT
+
+  min_ansible_version: 2.7
+  galaxy_tags:
+    - corosync
+    - pacemaker
+    - cluster
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - bionic
+dependencies: []

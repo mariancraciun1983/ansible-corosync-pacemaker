@@ -1,0 +1,16 @@
+---
+- name: exchange | verify key is collected
+  assert:
+    that:
+      - hostvars['_authkey_dummy'] is defined
+      - hostvars['_authkey_dummy']['authkey_content'] is defined
+      - hostvars['_authkey_dummy']['authkey_content'] | length > 0
+    quiet: yes
+    fail_msg: at this point authkey was supposed to be collected in the dummy host for later use
+
+- name: exchange | deploy authkey
+  copy:
+    content: "{{ hostvars['_authkey_dummy']['authkey_content'] }}"
+    dest: /etc/corosync/authkey
+    mode: 0400
+  notify: restart corosync

@@ -1,0 +1,10 @@
+---
+- name: heartbeats | deploy custom heartbeat scripts
+  copy:
+    src: "{{ item }}"
+    dest: /usr/lib/ocf/resource.d/heartbeat/
+    owner: root
+    group: root
+    mode: 0755
+  with_fileglob:
+    - files/heartbeat/*

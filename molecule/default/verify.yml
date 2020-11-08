@@ -1,0 +1,17 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: pcs | count hosts
+      # noqa 301 306
+      shell: pcs cluster status | grep "{{ play_hosts | length }} nodes configured" | wc -l
+      register: pcs_out
+    - name: pcs | verify number of hosts
+      assert:
+        that:
+          - pcs_out.stdout == "1"
+        fail_msg: >-
+          pcs cluster status did not return the
+          {{ play_hosts | length }} as hosts configured
+        quiet: yes

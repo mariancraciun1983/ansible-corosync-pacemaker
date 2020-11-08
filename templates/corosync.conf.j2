@@ -1,0 +1,56 @@
+# Please read the corosync.conf.5 manual page
+totem {
+  version: 2
+	k8s_cluster_name: corosync
+	token: 3000
+	token_retransmits_before_loss_const: 10
+	clear_node_high_bit: yes
+
+  secauth: off
+
+
+  ip_version: ipv4
+
+  transport: udpu
+
+  interface {
+    ringnumber: 0
+    ttl: 1
+  }
+}
+
+nodelist {
+{% for node in play_hosts %}
+  node {
+    name: {{ hostvars[node]['ansible_hostname'] }}
+
+    ring0_addr: {% if corosync_use_internal_ip|bool %} {{ hostvars[node]['internal_ip']|mandatory }} {% else %} {{ hostvars[node]['ansible_default_ipv4']['address'] }} {% endif%}
+
+    nodeid: {{ loop.index }}
+  }
+{% endfor %}
+}
+
+logging {
+  fileline: off
+  to_stderr: no
+  to_logfile: on
+  logfile: /var/log/corosync/corosync.log
+  to_syslog: on
+  syslog_facility: daemon
+  debug: off
+  timestamp: on
+  logger_subsys {
+    subsys: QUORUM
+    debug: off
+  }
+}
+
+quorum {
+  two_node: 1
+  auto_tie_breaker: 1
+  last_man_standing: 0
+  last_man_standing_window: 10000
+  provider: corosync_votequorum
+  wait_for_all: 0
+}

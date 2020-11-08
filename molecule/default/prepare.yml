@@ -1,0 +1,6 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: no
+  roles:
+    - mariancraciun1983.install_python
